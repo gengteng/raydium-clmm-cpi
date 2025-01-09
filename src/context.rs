@@ -1,5 +1,7 @@
 use anchor_lang::prelude::*;
 
+use crate::account::*;
+
 #[account]
 pub struct AccountPlaceholder {}
 
@@ -12,7 +14,7 @@ pub struct CreateAmmConfig<'info> {
 
     /// Initialize config state account to store protocol owner address and fee rates.
     #[account(mut)]
-    pub amm_config: Account<'info, AccountPlaceholder>,
+    pub amm_config: Box<Account<'info, AmmConfig>>,
 
     pub system_program: Account<'info, AccountPlaceholder>,
 }
@@ -23,7 +25,7 @@ pub struct UpdateAmmConfig<'info> {
 
     /// Amm config account to be changed
     #[account(mut)]
-    pub amm_config: Account<'info, AccountPlaceholder>,
+    pub amm_config: Box<Account<'info, AmmConfig>>,
 }
 
 #[derive(Accounts)]
@@ -33,11 +35,11 @@ pub struct CreatePool<'info> {
     pub pool_creator: Signer<'info>,
 
     /// Which config the pool belongs to.
-    pub amm_config: Account<'info, AccountPlaceholder>,
+    pub amm_config: Box<Account<'info, AmmConfig>>,
 
     /// Initialize an account to store the pool state
     #[account(mut)]
-    pub pool_state: Account<'info, AccountPlaceholder>,
+    pub pool_state: AccountLoader<'info, PoolState>,
 
     /// Token_0 mint, the key must be smaller then token_1 mint.
     pub token_mint_0: Account<'info, AccountPlaceholder>,
@@ -55,7 +57,7 @@ pub struct CreatePool<'info> {
 
     /// Initialize an account to store oracle observations
     #[account(mut)]
-    pub observation_state: Account<'info, AccountPlaceholder>,
+    pub observation_state: AccountLoader<'info, ObservationState>,
 
     /// Initialize an account to store if a tick array is initialized.
     #[account(mut)]
@@ -76,7 +78,7 @@ pub struct UpdatePoolStatus<'info> {
     pub authority: Signer<'info>,
 
     #[account(mut)]
-    pub pool_state: Account<'info, AccountPlaceholder>,
+    pub pool_state: AccountLoader<'info, PoolState>,
 }
 
 #[derive(Accounts)]
@@ -87,7 +89,7 @@ pub struct CreateOperationAccount<'info> {
 
     /// Initialize operation state account to store operation owner address and white list mint.
     #[account(mut)]
-    pub operation_state: Account<'info, AccountPlaceholder>,
+    pub operation_state: AccountLoader<'info, OperationState>,
 
     pub system_program: Account<'info, AccountPlaceholder>,
 }
@@ -99,7 +101,7 @@ pub struct UpdateOperationAccount<'info> {
 
     /// Initialize operation state account to store operation owner address and white list mint.
     #[account(mut)]
-    pub operation_state: Account<'info, AccountPlaceholder>,
+    pub operation_state: AccountLoader<'info, OperationState>,
 
     pub system_program: Account<'info, AccountPlaceholder>,
 }
@@ -110,7 +112,7 @@ pub struct TransferRewardOwner<'info> {
     pub authority: Signer<'info>,
 
     #[account(mut)]
-    pub pool_state: Account<'info, AccountPlaceholder>,
+    pub pool_state: AccountLoader<'info, PoolState>,
 }
 
 #[derive(Accounts)]
@@ -124,14 +126,14 @@ pub struct InitializeReward<'info> {
     pub funder_token_account: Account<'info, AccountPlaceholder>,
 
     /// For check the reward_funder authority
-    pub amm_config: Account<'info, AccountPlaceholder>,
+    pub amm_config: Box<Account<'info, AmmConfig>>,
 
     /// Set reward for this pool
     #[account(mut)]
-    pub pool_state: Account<'info, AccountPlaceholder>,
+    pub pool_state: AccountLoader<'info, PoolState>,
 
     /// load info from the account to judge reward permission
-    pub operation_state: Account<'info, AccountPlaceholder>,
+    pub operation_state: AccountLoader<'info, OperationState>,
 
     /// Reward mint
     pub reward_token_mint: Account<'info, AccountPlaceholder>,
@@ -164,7 +166,7 @@ pub struct CollectRemainingRewards<'info> {
     pub funder_token_account: Account<'info, AccountPlaceholder>,
     /// Set reward for this pool
     #[account(mut)]
-    pub pool_state: Account<'info, AccountPlaceholder>,
+    pub pool_state: AccountLoader<'info, PoolState>,
     /// Reward vault transfer remaining token to founder token account
     pub reward_token_vault: Account<'info, AccountPlaceholder>,
     /// The mint of reward token vault
@@ -181,7 +183,7 @@ pub struct CollectRemainingRewards<'info> {
 pub struct UpdateRewardInfos<'info> {
     /// The liquidity pool for which reward info to update
     #[account(mut)]
-    pub pool_state: Account<'info, AccountPlaceholder>,
+    pub pool_state: AccountLoader<'info, PoolState>,
 }
 
 #[derive(Accounts)]
@@ -189,13 +191,13 @@ pub struct SetRewardParams<'info> {
     /// Address to be set as protocol owner. It pays to create factory state account.
     pub authority: Signer<'info>,
 
-    pub amm_config: Account<'info, AccountPlaceholder>,
+    pub amm_config: Box<Account<'info, AmmConfig>>,
 
     #[account(mut)]
-    pub pool_state: Account<'info, AccountPlaceholder>,
+    pub pool_state: AccountLoader<'info, PoolState>,
 
     /// load info from the account to judge reward permission
-    pub operation_state: Account<'info, AccountPlaceholder>,
+    pub operation_state: AccountLoader<'info, OperationState>,
 
     /// Token program
     pub token_program: Account<'info, AccountPlaceholder>,
@@ -210,10 +212,10 @@ pub struct CollectProtocolFee<'info> {
 
     /// Pool state stores accumulated protocol fee amount
     #[account(mut)]
-    pub pool_state: Account<'info, AccountPlaceholder>,
+    pub pool_state: AccountLoader<'info, PoolState>,
 
     /// Amm config account stores owner
-    pub amm_config: Account<'info, AccountPlaceholder>,
+    pub amm_config: Box<Account<'info, AmmConfig>>,
 
     /// The address that holds pool tokens for token_0
     #[account(mut)]
@@ -251,10 +253,10 @@ pub struct CollectFundFee<'info> {
 
     /// Pool state stores accumulated protocol fee amount
     #[account(mut)]
-    pub pool_state: Account<'info, AccountPlaceholder>,
+    pub pool_state: AccountLoader<'info, PoolState>,
 
     /// Amm config account stores fund_owner
-    pub amm_config: Account<'info, AccountPlaceholder>,
+    pub amm_config: Box<Account<'info, AmmConfig>>,
 
     /// The address that holds pool tokens for token_0
     #[account(mut)]
@@ -311,7 +313,7 @@ pub struct OpenPosition<'info> {
 
     /// Add liquidity for this pool
     #[account(mut)]
-    pub pool_state: Account<'info, AccountPlaceholder>,
+    pub pool_state: AccountLoader<'info, PoolState>,
 
     /// Store the information of market marking in range
     #[account(mut)]
@@ -395,7 +397,7 @@ pub struct OpenPositionV2<'info> {
 
     /// Add liquidity for this pool
     #[account(mut)]
-    pub pool_state: Account<'info, AccountPlaceholder>,
+    pub pool_state: AccountLoader<'info, PoolState>,
 
     /// Store the information of market marking in range
     #[account(mut)]
@@ -473,7 +475,7 @@ pub struct OpenPositionWithToken22Nft<'info> {
 
     /// Add liquidity for this pool
     #[account(mut)]
-    pub pool_state: Account<'info, AccountPlaceholder>,
+    pub pool_state: AccountLoader<'info, PoolState>,
 
     /// Store the information of market marking in range
     #[account(mut)]
@@ -564,7 +566,7 @@ pub struct IncreaseLiquidity<'info> {
     pub nft_account: Account<'info, AccountPlaceholder>,
 
     #[account(mut)]
-    pub pool_state: Account<'info, AccountPlaceholder>,
+    pub pool_state: AccountLoader<'info, PoolState>,
 
     #[account(mut)]
     pub protocol_position: Account<'info, AccountPlaceholder>,
@@ -610,7 +612,7 @@ pub struct IncreaseLiquidityV2<'info> {
     pub nft_account: Account<'info, AccountPlaceholder>,
 
     #[account(mut)]
-    pub pool_state: Account<'info, AccountPlaceholder>,
+    pub pool_state: AccountLoader<'info, PoolState>,
 
     #[account(mut)]
     pub protocol_position: Account<'info, AccountPlaceholder>,
@@ -671,7 +673,7 @@ pub struct DecreaseLiquidity<'info> {
     pub personal_position: Account<'info, AccountPlaceholder>,
 
     #[account(mut)]
-    pub pool_state: Account<'info, AccountPlaceholder>,
+    pub pool_state: AccountLoader<'info, PoolState>,
 
     #[account(mut)]
     pub protocol_position: Account<'info, AccountPlaceholder>,
@@ -717,7 +719,7 @@ pub struct DecreaseLiquidityV2<'info> {
     pub personal_position: Account<'info, AccountPlaceholder>,
 
     #[account(mut)]
-    pub pool_state: Account<'info, AccountPlaceholder>,
+    pub pool_state: AccountLoader<'info, PoolState>,
 
     #[account(mut)]
     pub protocol_position: Account<'info, AccountPlaceholder>,
@@ -771,11 +773,11 @@ pub struct SwapSingle<'info> {
     pub payer: Signer<'info>,
 
     /// The factory state to read protocol fees
-    pub amm_config: Account<'info, AccountPlaceholder>,
+    pub amm_config: Box<Account<'info, AmmConfig>>,
 
     /// The program account of the pool in which the swap will be performed
     #[account(mut)]
-    pub pool_state: Account<'info, AccountPlaceholder>,
+    pub pool_state: AccountLoader<'info, PoolState>,
 
     /// The user token account for input token
     #[account(mut)]
@@ -795,7 +797,7 @@ pub struct SwapSingle<'info> {
 
     /// The program account for the most recent oracle observation
     #[account(mut)]
-    pub observation_state: Account<'info, AccountPlaceholder>,
+    pub observation_state: AccountLoader<'info, ObservationState>,
 
     /// SPL program for token transfers
     pub token_program: Account<'info, AccountPlaceholder>,
@@ -810,11 +812,11 @@ pub struct SwapSingleV2<'info> {
     pub payer: Signer<'info>,
 
     /// The factory state to read protocol fees
-    pub amm_config: Account<'info, AccountPlaceholder>,
+    pub amm_config: Box<Account<'info, AmmConfig>>,
 
     /// The program account of the pool in which the swap will be performed
     #[account(mut)]
-    pub pool_state: Account<'info, AccountPlaceholder>,
+    pub pool_state: AccountLoader<'info, PoolState>,
 
     /// The user token account for input token
     #[account(mut)]
@@ -834,7 +836,7 @@ pub struct SwapSingleV2<'info> {
 
     /// The program account for the most recent oracle observation
     #[account(mut)]
-    pub observation_state: Account<'info, AccountPlaceholder>,
+    pub observation_state: AccountLoader<'info, ObservationState>,
 
     /// SPL program for token transfers
     pub token_program: Account<'info, AccountPlaceholder>,
