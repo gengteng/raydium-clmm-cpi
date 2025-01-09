@@ -13,7 +13,7 @@ declare_id!("devi51mZmdwUJGU9hjN27vEz64Gps7uUefqxg27EAtH");
 declare_id!("CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK");
 
 #[program]
-pub mod amm_v3 {
+pub mod raydium_clmm {
 
     use super::*;
 
